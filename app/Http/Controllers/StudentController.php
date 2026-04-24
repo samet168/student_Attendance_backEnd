@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Student;
+use Illuminate\Http\Request;
+
+class StudentController extends Controller
+{
+    //
+    public function index()
+    {
+        $students = Student::all();
+        if($students == null){
+            return response()->json([
+                'status' => false,
+                'message' => 'No students found'
+            ], 404);
+        }
+        else{
+            return response()->json([
+                'status' => true,
+                'data' => $students
+            ], 200);
+        }
+    }
+    public function list(Request $request)
+    {
+        $query = Student::query();
+
+        // 🔎 SEARCH by name or email
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // 📄 PAGINATION
+        $students = $query->paginate(10);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Student list',
+            'data' => $students
+        ], 200);
+    }
+public function store(Request $request)
+{
+    $request->validate([
+        'classroom_id' => 'required|exists:classrooms,id',
+        'student_id_card' => 'required|unique:students',
+        'name' => 'required|string|max:255',
+        'gender' => 'required|in:Male,Female',
+        'phone' => 'nullable|string|max:20',
+    ]);
+
+    $student = Student::create([
+        'classroom_id' => $request->classroom_id,
+        'student_id_card' => $request->student_id_card,
+        'name' => $request->name,
+        'gender' => $request->gender,
+        'phone' => $request->phone,
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Student created successfully',
+        'data' => $student
+    ], 201);
+}
+    public function show($id)
+    {
+        $student = Student::find($id);
+        if($student == null){
+            return response()->json([
+                'status' => false,
+                'message' => 'Student not found'
+            ], 404);
+        }
+        else{
+            return response()->json([
+                'status' => true,
+                'data' => $student
+            ], 200);
+        }
+    }
+public function update(Request $request, $id)
+{
+    $student = Student::find($id);
+
+    if (!$student) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Student not found'
+        ], 404);
+    }
+
+    $request->validate([
+        'classroom_id' => 'required|exists:classrooms,id',
+        'student_id_card' => 'required|unique:students,student_id_card,' . $id,
+        'name' => 'required|string|max:255',
+        'gender' => 'required|in:Male,Female',
+        'phone' => 'nullable|string|max:20',
+    ]);
+
+    $student->classroom_id = $request->classroom_id;
+    $student->student_id_card = $request->student_id_card;
+    $student->name = $request->name;
+    $student->gender = $request->gender;
+    $student->phone = $request->phone;
+
+    $student->save();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Student updated successfully',
+        'data' => $student
+    ], 200);
+}
+    public function destroy($id)
+    {
+        $student = Student::find($id);
+
+        if (!$student) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Student not found'
+            ], 404);
+        }
+
+        $student->delete();
+        return response()->json([
+            'status' => true,
+            'message' => 'Student deleted successfully'
+        ], 200);
+    }
+}
