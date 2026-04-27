@@ -9,12 +9,12 @@ class Student extends Model
     //
     // protected $fillable = ['classroom_id', 'student_id_card', 'name', 'gender', 'phone'];
     protected $fillable = [
-    'classroom_id',
-    'student_id_card',
-    'name',
-    'gender',
-    'phone'
-];
+        'classroom_id',
+        'student_id_card',
+        'name',
+        'gender',
+        'phone'
+    ];
     public function attendances() {
         return $this->hasMany(Attendance::class);
     }

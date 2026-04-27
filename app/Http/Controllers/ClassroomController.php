@@ -43,22 +43,25 @@ class ClassroomController extends Controller
             'data' => $classrooms
         ], 200);
     }
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-           
-        ]);
-        $classroom = Classroom::create([
-            'name' => $request->name,
-           
-        ]);
-        return response()->json([
-            'status' => true,
-            'message' => 'Classroom created successfully',
-            'data' => $classroom
-        ], 201);
-    }
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'room_number' => 'nullable|string|max:255',
+    ]);
+
+    $classroom = Classroom::create([
+        'name' => $request->name,
+        'room_number' => $request->room_number,
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Classroom created successfully',
+        'data' => $classroom
+    ], 201);
+}
+
     public function show($id)
     {
         $classroom = Classroom::find($id);
@@ -87,7 +90,7 @@ class ClassroomController extends Controller
         }
 
         $classroom->name = $request->name;
-        $classroom->code = $request->code;
+        $classroom->room_number = $request->room_number; // ✔️ only this
 
         $classroom->save();
 
@@ -95,7 +98,7 @@ class ClassroomController extends Controller
             'status' => true,
             'message' => 'Classroom updated successfully',
             'data' => $classroom
-        ], 200);
+        ]);
     }
 
     public function destroy($id)
