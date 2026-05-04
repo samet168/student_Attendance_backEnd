@@ -10,6 +10,7 @@ class Attendance extends Model
         'student_id',
         'classroom_id',      // ← ប្តូរពី subject_id ទៅ classroom_id
         'user_id',
+        'subject_id',
         'attendance_date',
         'status',
         'remarks',
@@ -22,13 +23,13 @@ class Attendance extends Model
         return $this->belongsTo(Student::class);
     }
 
-    // ប្តូរពី subject() ទៅ classroom()
+    
     public function classroom()
     {
         return $this->belongsTo(Classroom::class);
     }
 
-    // រក្សាទុក subject() ចាស់បើចង់ប្រើប្រាស់ទិន្នន័យចាស់ (ជម្រើស)
+    
     public function subject()
     {
         return $this->belongsTo(Subject::class);

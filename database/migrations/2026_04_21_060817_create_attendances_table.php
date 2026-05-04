@@ -13,12 +13,23 @@ return new class extends Migration
     {
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
+
             $table->foreignId('student_id')->constrained()->onDelete('cascade');
+            $table->foreignId('classroom_id')->constrained()->onDelete('cascade');
             $table->foreignId('subject_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->comment('Teacher who marked')->constrained();
+
+            $table->foreignId('user_id')
+                ->comment('Teacher who marked attendance')
+                ->constrained()
+                ->onDelete('cascade');
+
             $table->date('attendance_date');
-            $table->enum('status', ['Present', 'Absent', 'Late', 'Permission'])->default('Present');
-            $table->text('remarks')->nullable(); // សម្រាប់ដាក់ចំណាំផ្សេងៗ
+
+            $table->enum('status', ['Present', 'Absent', 'Late', 'Permission'])
+                ->default('Present');
+
+            $table->text('remarks')->nullable();
+
             $table->timestamps();
         });
     }

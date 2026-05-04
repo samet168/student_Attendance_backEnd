@@ -8,22 +8,20 @@ use Illuminate\Http\Request;
 class StudentController extends Controller
 {
     //
-    public function index()
-    {
-        $students = Student::all();
-        if($students == null){
-            return response()->json([
-                'status' => false,
-                'message' => 'No students found'
-            ], 404);
-        }
-        else{
-            return response()->json([
-                'status' => true,
-                'data' => $students
-            ], 200);
-        }
+public function index(Request $request)
+{
+    $query = Student::query();
+
+    if ($request->classroom_id) {
+        $query->where('classroom_id', $request->classroom_id);
     }
+
+   
+    $students = $query->with(['classroom'])->get();
+
+    return response()->json(['data' => $students]);
+}
+
     public function list(Request $request)
     {
         $query = Student::query();
