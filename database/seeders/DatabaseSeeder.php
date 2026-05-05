@@ -11,37 +11,74 @@ use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // 1. បង្កើត Users (Admin និង គ្រូ)
-        User::create([
+        // ======================
+        // 1. USERS
+        // ======================
+        $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@gmail.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
         ]);
 
-        User::create([
+        $teacher1 = User::create([
             'name' => 'Teacher Sok',
             'email' => 'sok@gmail.com',
             'password' => Hash::make('password123'),
             'role' => 'teacher',
         ]);
 
-        // 2. បង្កើត Classrooms (ថ្នាក់រៀន)
-        $class1 = Classroom::create(['name' => 'Year 3 - IT', 'room_number' => 'A-101']);
-        $class2 = Classroom::create(['name' => 'Year 3 - MIS', 'room_number' => 'A-102']);
+        $teacher2 = User::create([
+            'name' => 'Teacher Lina',
+            'email' => 'lina@gmail.com',
+            'password' => Hash::make('password123'),
+            'role' => 'teacher',
+        ]);
 
-        // 3. បង្កើត Subjects (មុខវិជ្ជា)
-        Subject::create(['subject_name' => 'System Analysis and Design', 'subject_code' => 'SAD101']);
-        Subject::create(['subject_name' => 'Web Development (Laravel)', 'subject_code' => 'WEB202']);
-        Subject::create(['subject_name' => 'Network Configuration', 'subject_code' => 'NET303']);
+        // ======================
+        // 2. CLASSROOMS (NO teacher_id anymore)
+        // ======================
+        $class1 = Classroom::create([
+            'name' => 'Year 3 - IT',
+            'room_number' => 'A-101',
+        ]);
 
-        // 4. បង្កើត Students (សិស្ស)
-        // សិស្សក្នុងថ្នាក់ទី១
+        $class2 = Classroom::create([
+            'name' => 'Year 3 - MIS',
+            'room_number' => 'A-102',
+        ]);
+
+        $class3 = Classroom::create([
+            'name' => 'Year 2 - Networking',
+            'room_number' => 'B-201',
+        ]);
+
+        // ======================
+        // 🔥 ATTACH TEACHERS (PIVOT TABLE)
+        // ======================
+
+        $class1->teachers()->attach([$teacher1->id, $teacher2->id]);
+        $class2->teachers()->attach([$teacher2->id]);
+        $class3->teachers()->attach([$teacher1->id]);
+
+        // ======================
+        // 3. SUBJECTS
+        // ======================
+        Subject::create([
+            'subject_name' => 'Laravel Web',
+            'subject_code' => 'WEB101',
+        ]);
+
+        Subject::create([
+            'subject_name' => 'Database',
+            'subject_code' => 'DB202',
+        ]);
+
+        // ======================
+        // 4. STUDENTS
+        // ======================
         Student::create([
             'classroom_id' => $class1->id,
             'student_id_card' => 'ST001',
@@ -58,7 +95,6 @@ class DatabaseSeeder extends Seeder
             'phone' => '098765432',
         ]);
 
-        // សិស្សក្នុងថ្នាក់ទី២
         Student::create([
             'classroom_id' => $class2->id,
             'student_id_card' => 'ST003',
@@ -66,5 +102,7 @@ class DatabaseSeeder extends Seeder
             'gender' => 'Male',
             'phone' => '011223344',
         ]);
+
+        $this->command->info("✅ Seeder completed successfully");
     }
 }

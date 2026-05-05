@@ -5,75 +5,232 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\Student;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use MongoDB\BSON\ObjectId;
+
+
 
 class AttendanceController extends Controller
 {
-    /**
-     * Display a listing of attendance (សម្រាប់ហៅឈ្មោះតាមថ្នាក់)
-     */
-// នៅក្នុង StudentController.php
-public function index(Request $request)
-{
-    $classroomId = $request->query('classroom_id');
-
-    $students = Student::with(['classroom', 'subject']) 
-        ->where('classroom_id', $classroomId)
-        ->get();
-
-    return response()->json([
-        'status' => 'success',
-        'data' => $students
-    ]);
-}
 
 
+// public function list(Request $request)
+// {
+//     try {
 
+//         if (!$request->classroom_id) {
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'classroom_id required'
+//             ], 400);
+//         }
+
+//         $classroomId = $request->classroom_id;
+
+//         $page  = max((int)$request->page, 1);
+//         $limit = 10;
+//         $skip  = ($page - 1) * $limit;
+
+//         // =====================
+//         // 1. GET STUDENTS
+//         // =====================
+//         $studentsQuery = Student::where('classroom_id', $classroomId);
+
+//         $students = $studentsQuery
+//             ->skip($skip)
+//             ->limit($limit)
+//             ->get();
+
+//         $total = $studentsQuery->count();
+
+//         // =====================
+//         // 2. GET ATTENDANCE
+//         // =====================
+//         $attendances = Attendance::where('classroom_id', $classroomId)->get();
+
+//         // =====================
+//         // 3. COUNT MAP
+//         // =====================
+//         $countMap = [];
+
+//         foreach ($attendances as $att) {
+
+//             $sid = (string)$att->student_id;
+
+//             if (!isset($countMap[$sid])) {
+//                 $countMap[$sid] = [
+//                     'present' => 0,
+//                     'absent' => 0,
+//                     'late' => 0,
+//                     'permission' => 0,
+//                 ];
+//             }
+
+//             switch (strtolower($att->status)) {
+//                 case 'present':
+//                     $countMap[$sid]['present']++;
+//                     break;
+//                 case 'absent':
+//                     $countMap[$sid]['absent']++;
+//                     break;
+//                 case 'late':
+//                     $countMap[$sid]['late']++;
+//                     break;
+//                 case 'permission':
+//                     $countMap[$sid]['permission']++;
+//                     break;
+//             }
+//         }
+
+//         // =====================
+//         // 4. DEBUG (IMPORTANT)
+//         // =====================
+//         if ($students->isEmpty()) {
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'No students found for this classroom',
+//                 'debug_classroom_id' => $classroomId
+//             ]);
+//         }
+
+//         return response()->json([
+//             'status' => true,
+//             'data' => [
+//                 'data' => $students,
+//                 'current_page' => $page,
+//                 'per_page' => $limit,
+//                 'total' => $total,
+//                 'last_page' => ceil($total / $limit),
+//             ],
+//             'count_map' => $countMap
+//         ]);
+
+//     } catch (\Exception $e) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => $e->getMessage()
+//         ], 500);
+//     }
+// }
 public function list(Request $request)
 {
-    // ត្រូវប្រាកដថាមាន classroom_id បើមិនដូច្នោះទេវានឹងមិនដឹងថាត្រូវបង្ហាញសិស្សថ្នាក់ណាឡើយ
-    $classroom_id = $request->classroom_id;
+    try {
 
-    $studentQuery = \App\Models\Student::with('classroom')
-        ->where('classroom_id', $classroom_id);
+        if (!$request->classroom_id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'classroom_id required'
+            ], 400);
+        }
 
-    // 🔍 ស្វែងរកតាមឈ្មោះ ឬ ID កាត
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $studentQuery->where(function ($q) use ($search) {
-            $q->where('name', 'LIKE', "%{$search}%")
-              ->orWhere('student_id_card', 'LIKE', "%{$search}%");
-        });
+        $user = Auth::user();
+
+        $classroomId = $request->classroom_id;
+
+        $page  = max((int)$request->page, 1);
+        $limit = 10;
+        $skip  = ($page - 1) * $limit;
+
+        // =====================
+        // STUDENTS
+        // =====================
+        $studentsQuery = Student::where('classroom_id', $classroomId);
+
+        $students = $studentsQuery
+            ->skip($skip)
+            ->limit($limit)
+            ->get();
+
+        $total = $studentsQuery->count();
+
+        // =====================
+        // ATTENDANCE QUERY (FIX HERE)
+        // =====================
+        $attendanceQuery = Attendance::where('classroom_id', $classroomId);
+
+        // 👨‍🏫 teacher only sees own data
+        if ($user->role !== 'admin') {
+            $attendanceQuery->where('user_id', $user->id);
+        }
+
+        // 📘 filter by subject
+        if ($request->subject_id) {
+            $attendanceQuery->where('subject_id', $request->subject_id);
+        }
+
+        // 📅 filter by date
+        if ($request->date) {
+            $start = Carbon::parse($request->date)->startOfDay();
+            $end   = Carbon::parse($request->date)->endOfDay();
+
+            $attendanceQuery->whereBetween('attendance_date', [$start, $end]);
+        }
+
+        // 🔍 filter by status
+        if ($request->status) {
+            $attendanceQuery->where('status', $request->status);
+        }
+
+        $attendances = $attendanceQuery->get();
+
+        // =====================
+        // COUNT MAP
+        // =====================
+        $countMap = [];
+
+        foreach ($attendances as $att) {
+
+            $sid = (string)$att->student_id;
+
+            if (!isset($countMap[$sid])) {
+                $countMap[$sid] = [
+                    'present' => 0,
+                    'absent' => 0,
+                    'late' => 0,
+                    'permission' => 0,
+                ];
+            }
+
+            switch (strtolower($att->status)) {
+                case 'present':
+                    $countMap[$sid]['present']++;
+                    break;
+                case 'absent':
+                    $countMap[$sid]['absent']++;
+                    break;
+                case 'late':
+                    $countMap[$sid]['late']++;
+                    break;
+                case 'permission':
+                    $countMap[$sid]['permission']++;
+                    break;
+            }
+        }
+
+        // =====================
+        // RESPONSE
+        // =====================
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'data' => $students,
+                'current_page' => $page,
+                'per_page' => $limit,
+                'total' => $total,
+                'last_page' => ceil($total / $limit),
+            ],
+            'count_map' => $countMap
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
-
-    $students = $studentQuery->paginate(20);
-    $studentIds = $students->pluck('id');
-
-    // 📊 គណនាស្ថិតិវត្តមានសម្រាប់សិស្សនីមួយៗ
-    $countMap = \App\Models\Attendance::whereIn('student_id', $studentIds)
-        // បើមានការជ្រើសរើសថ្ងៃ វានឹងរាប់តែក្នុងថ្ងៃនោះ បើអត់ទេវានឹងរាប់សរុបទាំងអស់
-        ->when($request->filled('date'), function ($q) use ($request) {
-            $q->where('attendance_date', $request->date);
-        })
-        ->when($request->filled('status'), function ($q) use ($request) {
-            $q->where('status', $request->status);
-        })
-        ->selectRaw("
-            student_id,
-            SUM(status = 'Present')    as present,
-            SUM(status = 'Absent')     as absent,
-            SUM(status = 'Late')       as late,
-            SUM(status = 'Permission') as permission
-        ")
-        ->groupBy('student_id')
-        ->get()
-        ->keyBy('student_id');
-
-    return response()->json([
-        'status'    => 'success',
-        'data'      => $students,    // បញ្ជីឈ្មោះសិស្ស (Pagination)
-        'count_map' => $countMap,    // ស្ថិតិវត្តមានរបស់សិស្សម្នាក់ៗ
-    ]);
 }
+
     
 
     /**
@@ -105,7 +262,31 @@ public function store(Request $request)
         'data' => $attendance
     ]);
 }
+// public function store(Request $request)
+// {
+//     $request->validate([
+//         'student_id' => 'required',
+//         'classroom_id' => 'required',
+//         'subject_id' => 'required',
+//         'attendance_date' => 'required|date',
+//         'status' => 'required|in:present,absent,late,permission',
+//     ]);
 
+//     $attendance = Attendance::create([
+//         'student_id' => $request->student_id,
+//         'classroom_id' => $request->classroom_id,
+//         'subject_id' => $request->subject_id,
+//         'attendance_date' => $request->attendance_date,
+//         'status' => $request->status,
+//         'remarks' => $request->remarks ?? "",
+//         'user_id' => auth()->id() ?? 1, // ✅ FIX (no login)
+//     ]);
+
+//     return response()->json([
+//         'status' => true,
+//         'data' => $attendance
+//     ]);
+// }
     /**
      * Show single attendance
      */

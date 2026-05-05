@@ -1,26 +1,43 @@
 <?php
+// namespace App\Http\Middleware;
+
+// use Closure;
+
+// class RoleMiddleware
+// {
+//     public function handle($request, Closure $next, ...$roles)
+//     {
+//         $user = $request->auth_user;
+
+//         if (!$user) {
+//             return response()->json(['message' => 'Unauthenticated'], 401);
+//         }
+
+//         if (!in_array($user->role, $roles)) {
+//             return response()->json(['message' => 'Forbidden'], 403);
+//         }
+
+//         return $next($request);
+//     }
+// }
 
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle($request, Closure $next, ...$roles)
     {
-        $user = $request->user();
+        $user = Auth::user();
 
         if (!$user) {
-            return response()->json([
-                'message' => 'Unauthenticated'
-            ], 401);
+            return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        if ($user->role !== $role) {
-            return response()->json([
-                'message' => 'Unauthorized - role not allowed'
-            ], 403);
+        if (!in_array($user->role, $roles)) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         return $next($request);

@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     // REGISTER
@@ -33,7 +33,7 @@ class AuthController extends Controller
     }
 
     // LOGIN
-    public function login(Request $request)
+ public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -42,18 +42,24 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Invalid email or password'
-            ], 401);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Wrong password'], 401);
+        }
+
+        // 🔥 create token
+        $token = bin2hex(random_bytes(30));
+
+        $user->token = $token;
+        $user->save();
 
         return response()->json([
             'message' => 'Login success',
-            'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'user' => $user
         ]);
     }
 

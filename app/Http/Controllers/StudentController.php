@@ -43,16 +43,43 @@ public function index(Request $request)
             'data' => $students
         ], 200);
     }
+// public function store(Request $request)
+// {
+//     $request->validate([
+//         'classroom_id' => 'required|exists:classrooms,id',
+//         'student_id_card' => 'required|unique:students',
+//         'name' => 'required|string|max:255',
+//         'gender' => 'required|in:Male,Female',
+//         'phone' => 'nullable|string|max:20',
+//     ]);
+
+//     $student = Student::create([
+//         'classroom_id' => $request->classroom_id,
+//         'student_id_card' => $request->student_id_card,
+//         'name' => $request->name,
+//         'gender' => $request->gender,
+//         'phone' => $request->phone,
+//     ]);
+
+//     return response()->json([
+//         'status' => true,
+//         'message' => 'Student created successfully',
+//         'data' => $student
+//     ], 201);
+// }
+
 public function store(Request $request)
 {
+    // 1. Validate data
     $request->validate([
         'classroom_id' => 'required|exists:classrooms,id',
-        'student_id_card' => 'required|unique:students',
+        'student_id_card' => 'required|string|unique:students,student_id_card',
         'name' => 'required|string|max:255',
         'gender' => 'required|in:Male,Female',
         'phone' => 'nullable|string|max:20',
     ]);
 
+    // 2. Create student
     $student = Student::create([
         'classroom_id' => $request->classroom_id,
         'student_id_card' => $request->student_id_card,
@@ -61,8 +88,8 @@ public function store(Request $request)
         'phone' => $request->phone,
     ]);
 
+    // 3. Response
     return response()->json([
-        'status' => true,
         'message' => 'Student created successfully',
         'data' => $student
     ], 201);

@@ -11,10 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Schema::create('classrooms', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('name'); // ឧទាហរណ៍៖ IT Generation 5
+        //     $table->string('room_number')->nullable();
+        //     $table->timestamps();
+        // });
         Schema::create('classrooms', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // ឧទាហរណ៍៖ IT Generation 5
-            $table->string('room_number')->nullable();
+
+            $table->string('name'); // ឈ្មោះថ្នាក់ (ex: IT A1)
+            $table->string('room_number')->nullable(); // លេខបន្ទប់
+
+
+            // 👨‍🏫 Teacher
+            $table->foreignId('teacher_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->timestamps();
         });
     }

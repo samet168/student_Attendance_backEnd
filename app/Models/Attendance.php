@@ -2,20 +2,25 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
+// use Illuminate\Database\Eloquent\Model;
+use MongoDB\Laravel\Eloquent\Model;
+use MongoDB\Laravel\Relations\BelongsTo;
+use MongoDB\Laravel\Relations\HasMany;
 class Attendance extends Model
+
 {
+    protected $connection = "mongodb";
+    // protected $collection = "attendances";
     protected $fillable = [
         'student_id',
-        'classroom_id',      // ← ប្តូរពី subject_id ទៅ classroom_id
+        'classroom_id',      
         'user_id',
         'subject_id',
         'attendance_date',
         'status',
         'remarks',
-        'time_in',           // បើប្រើ
-        'time_out'           // បើប្រើ
+        'time_in',           
+        'time_out'          
     ];
 
     public function student()

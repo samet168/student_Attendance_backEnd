@@ -1,123 +1,160 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class ClassroomController extends Controller
 {
-    //
-    public function index()
-    {
-       $classrooms = Classroom::all();
-        if($classrooms == null){
-            return response()->json([
-                'status' => false,
-                'message' => 'No classrooms found'
-            ], 404);
-        }
-        else{
-            return response()->json([
-                'status' => true,
-                'data' => $classrooms
-            ], 200);
-        }
+
+
+public function index(Request $request)
+{
+    $user = Auth::user();
+
+    $query = Classroom::query();
+
+    //  TEACHER
+    if ($user->role === 'teacher') {
+
+        $query->where('teacher_id', 'all', [$user->id]);
     }
 
-    public function list(Request $request)
-    {
-        $query = Classroom::query();
+    //  ADMIN
+    if ($user->role === 'admin' && $request->teacher_id) {
 
-        // 🔎 SEARCH by name
-        if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+        $query->where('teacher_id', 'all', [$request->teacher_id]);
+    }
+
+    return response()->json([
+        'message' => 'Classrooms fetched successfully',
+        'data' => $query->latest()->get()
+    ]);
+}
+
+
+
+
+    public function getTeachers()
+        {
+            $teachers = User::where('role', 'teacher')->get();
+
+            return response()->json([
+                'data' => $teachers
+            ]);
         }
 
-        // 📄 PAGINATION
-        $classrooms = $query->paginate(10);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Classroom list',
-            'data' => $classrooms
-        ], 200);
-    }
+
+
+
+    // 📌 CREATE CLASS
+// public function store(Request $request)
+// {
+//     // 1. Validate input
+//     $request->validate([
+//         'name' => 'required|string|max:255',
+//         'room_number' => 'nullable|string|max:255',
+//         'teacher_id' => 'nullable|exists:users,id',
+//     ]);
+
+//     // 2. Create new classroom
+//     $classroom = Classroom::create([
+//         'name' => $request->name,
+//         'room_number' => $request->room_number,
+//         'teacher_id' => $request->teacher_id,
+//     ]);
+
+//     // 3. Response
+//     return response()->json([
+//         'message' => 'Classroom created successfully',
+//         'data' => $classroom
+//     ], 201);
+// }
+
+
 public function store(Request $request)
 {
     $request->validate([
         'name' => 'required|string|max:255',
         'room_number' => 'nullable|string|max:255',
+        'teacher_ids' => 'required|array',
+        'teacher_ids.*' => 'exists:users,id',
     ]);
 
+    // 1. create classroom
     $classroom = Classroom::create([
         'name' => $request->name,
         'room_number' => $request->room_number,
     ]);
 
+    // 2. attach teachers (array → pivot)
+    $classroom->teachers()->attach($request->teacher_ids);
+
     return response()->json([
-        'status' => true,
-        'message' => 'Classroom created successfully',
-        'data' => $classroom
+        'message' => 'Class created successfully',
+        'data' => $classroom->load('teachers')
     ], 201);
 }
 
-    public function show($id)
-    {
-        $classroom = Classroom::find($id);
-        if($classroom == null){
-            return response()->json([
-                'status' => false,
-                'message' => 'Classroom not found'
-            ], 404);
-        }
-        else{
-            return response()->json([
-                'status' => true,
-                'data' => $classroom
-            ], 200);
-        }
-    }
-    public function update(Request $request, $id)
-    {
-        $classroom = Classroom::find($id);
+    // 📌 SHOW
+public function show($id)
+{
+    $class = Classroom::with('teachers')->find($id);
 
-        if (!$classroom) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Classroom not found'
-            ], 404);
-        }
-
-        $classroom->name = $request->name;
-        $classroom->room_number = $request->room_number; // ✔️ only this
-
-        $classroom->save();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Classroom updated successfully',
-            'data' => $classroom
-        ]);
+    if (!$class) {
+        return response()->json(['message' => 'Not found'], 404);
     }
 
+    return response()->json([
+        'status' => true,
+        'data' => $class
+    ]);
+}
+
+    // 📌 UPDATE
+public function update(Request $request, $id)
+{
+    $class = Classroom::find($id);
+
+    if (!$class) {
+        return response()->json(['message' => 'Not found'], 404);
+    }
+
+    // update normal fields
+    $class->update([
+        'name' => $request->name,
+        'room_number' => $request->room_number,
+    ]);
+
+    // ✅ sync teachers
+    if ($request->has('teacher_ids')) {
+        $class->teachers()->sync($request->teacher_ids);
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Updated successfully',
+        'data' => $class
+    ]);
+}
+
+    // 📌 DELETE
     public function destroy($id)
     {
-        $classroom = Classroom::find($id);
+        $class = Classroom::find($id);
 
-        if (!$classroom) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Classroom not found'
-            ], 404);
+        if (!$class) {
+            return response()->json(['message' => 'Not found'], 404);
         }
 
-        $classroom->delete();
+        $class->delete();
 
         return response()->json([
-            'status' => true,
-            'message' => 'Classroom deleted successfully'
-        ], 200);
+            'message' => 'Deleted successfully'
+        ]);
     }
-
 }
