@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -23,7 +22,7 @@ class AuthTokenMiddleware
             return response()->json(['message' => 'Invalid token'], 401);
         }
 
-        // 🔥 IMPORTANT: attach to Laravel auth
+        // ✅ attach user to Laravel Auth
         Auth::setUser($user);
 
         return $next($request);

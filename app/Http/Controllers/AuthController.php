@@ -33,6 +33,45 @@ class AuthController extends Controller
     }
 
     // LOGIN
+    //  public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required'
+    //     ]);
+
+    //     $user = User::where('email', $request->email)->first();
+
+    //     if (!$user) {
+    //         return response()->json(['message' => 'User not found'], 404);
+    //     }
+
+    //     if (!Hash::check($request->password, $user->password)) {
+    //         return response()->json(['message' => 'Wrong password'], 401);
+    //     }
+
+    //     // 🔥 create token
+    //     $token = bin2hex(random_bytes(30));
+
+    //     $user->token = $token;
+    //     $user->save();
+
+    //     return response()->json([
+    //         'message' => 'Login success',
+    //         'token' => $token,
+    //         'user' => $user
+    //     ]);
+    // }
+
+    // // LOGOUT
+    // public function logout(Request $request)
+    // {
+    //     $request->user()->tokens()->delete();
+
+    //     return response()->json([
+    //         'message' => 'Logout success'
+    //     ]);
+    // }
  public function login(Request $request)
     {
         $request->validate([
@@ -50,7 +89,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Wrong password'], 401);
         }
 
-        // 🔥 create token
+        // ✅ create token
         $token = bin2hex(random_bytes(30));
 
         $user->token = $token;
@@ -63,13 +102,16 @@ class AuthController extends Controller
         ]);
     }
 
-    // LOGOUT
-    public function logout(Request $request)
+    public function logout()
     {
-        $request->user()->tokens()->delete();
+        $user = auth()->user();
 
-        return response()->json([
-            'message' => 'Logout success'
-        ]);
+        if ($user) {
+            $user->token = null;
+            $user->save();
+        }
+
+        return response()->json(['message' => 'Logged out']);
     }
-}
+
+    }
