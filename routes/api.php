@@ -1,6 +1,6 @@
 <?php
 
-
+use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -11,33 +11,18 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\AttendanceController;
 
-/*
-|--------------------------------------------------------------------------
-| PUBLIC ROUTES
-|--------------------------------------------------------------------------
-*/
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
-/*
-|--------------------------------------------------------------------------
-| AUTH ROUTES (TOKEN)
-|--------------------------------------------------------------------------
-*/
+
 Route::middleware('auth.token')->group(function () {
 
-    Route::get('/profile', function (Request $request) {
-        return response()->json($request->auth_user);
-    });
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
 
-    Route::post('/logout', [AuthController::class, 'logout']);
 });
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN ONLY ROUTES
-|--------------------------------------------------------------------------
-*/
 Route::middleware(['auth.token', 'role:admin'])->group(function () {
 
     // USER
@@ -83,39 +68,20 @@ Route::middleware(['auth.token', 'role:admin'])->group(function () {
     Route::get('/attendance/count-student', [AttendanceController::class, 'countPerStudent']);
 });
 
-/*
-|--------------------------------------------------------------------------
-| TEACHER + ADMIN ROUTES
-|--------------------------------------------------------------------------
-*/
+
 Route::middleware(['auth.token', 'role:admin,teacher'])->group(function () {
-
-
 
         // CLASSROOM
     Route::get('/classroom', [ClassroomController::class, 'index']);
     Route::get('/classroom/list', [ClassroomController::class, 'list']);
-    Route::post('/classroom', [ClassroomController::class, 'store']);
-    Route::get('/classroom/{id}', [ClassroomController::class, 'show']);
-    Route::post('/classroom/{id}', [ClassroomController::class, 'update']);
-    Route::delete('/classroom/{id}', [ClassroomController::class, 'destroy']);
 
 
-    // STUDENT
-    Route::get('/student', [StudentController::class, 'index']);
+    Route::get('/students', [StudentController::class, 'index']);
     Route::get('/student/list', [StudentController::class, 'list']);
-    Route::post('/student', [StudentController::class, 'store']);
-    Route::get('/student/{id}', [StudentController::class, 'show']);
-    Route::post('/student/{id}', [StudentController::class, 'update']);
-    Route::delete('/student/{id}', [StudentController::class, 'destroy']);
 
     // SUBJECT
     Route::get('/subject', [SubjectController::class, 'index']);
     Route::get('/subject/list', [SubjectController::class, 'list']);
-    Route::post('/subject', [SubjectController::class, 'store']);
-    Route::get('/subject/{id}', [SubjectController::class, 'show']);
-    Route::post('/subject/{id}', [SubjectController::class, 'update']);
-    Route::delete('/subject/{id}', [SubjectController::class, 'destroy']);
 
     // ATTENDANCE
     Route::get('/attendance', [AttendanceController::class, 'index']);
