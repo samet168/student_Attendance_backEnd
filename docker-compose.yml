@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: Attendence_db-app
+    ports:
+      - "10000:10000"
+    environment:
+      - DB_CONNECTION=mongodb
+      - DB_HOST=mongodb
+      - DB_PORT=27017
+      - DB_DATABASE=Attendence_db
+      - DB_USERNAME=
+      - DB_PASSWORD=
+      - APP_ENV=local
+      - APP_DEBUG=true
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: Attendence_db-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  app-network:
+    driver: bridge

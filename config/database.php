@@ -122,11 +122,17 @@ return [
         //     'password' => env('DB_PASSWORD', ''),
         //     'options'  => [],
         // ],
+
+        // 'mongodb' => [
+        //     'driver' => 'mongodb',
+        //     'host' => env('DB_HOST', '127.0.0.1'),
+        //     'port' => env('DB_PORT', 27017),
+        //     'database' => env('DB_DATABASE'),
+        // ],
         'mongodb' => [
             'driver' => 'mongodb',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', 27017),
-            'database' => env('DB_DATABASE'),
+            'dsn' => env('DB_URI'), 
+            'database' => env('DB_DATABASE', 'Atten_db'),
         ],
 
     ],
