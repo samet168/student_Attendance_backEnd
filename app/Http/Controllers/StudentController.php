@@ -143,37 +143,37 @@ public function store(Request $request)
 //     ], 200);
 // }
 
+
 public function update(Request $request, $id)
 {
-    $student = Student::find($id,['*']);
+    $student = Student::find($id);
 
     if (!$student) {
         return response()->json([
             'status' => false,
-            'message' => 'រកមិនឃើញទិន្នន័យសិស្សឡើយ (Student not found)'
+            'message' => 'រកមិនឃើញទិន្នន័យសិស្សឡើយ'
         ], 404);
     }
 
-    // 💡 កែសម្រួលការ Validate ឱ្យកាន់តែច្បាស់លាស់សម្រាប់ POST Method
+    // 💡 កែសម្រួលលក្ខខណ្ឌត្រង់ unique ឱ្យស្គាល់ String ID (MongoDB/UUID)
     $request->validate([
         'classroom_id'    => 'required|exists:classrooms,id',
         'student_id_card' => [
             'required',
-            // ប្រើ Rule::unique ដើម្បីប្រាប់ Laravel ឱ្យរំលង ID របស់សិស្សម្នាក់នេះចោល មិនបាច់គិតថាជាន់គ្នាទេ
-            Rule::unique('students', 'student_id_card')->ignore($id), 
+            // 💡 បញ្ជាក់ប្រាប់ Laravel ថា ឱ្យ ignore $id ទៅលើ column 'id' (ឬ '_id' បើប្រើ MongoDB)
+            Rule::unique('students', 'student_id_card')->ignore($id, 'id'), 
         ],
         'name'            => 'required|string|max:255',
         'gender'          => 'required|in:Male,Female',
         'phone'           => 'nullable|string|max:20',
     ]);
 
-    // រក្សាទុកទិន្នន័យថ្មី
+    // រក្សាទុកទិន្នន័យ
     $student->classroom_id = $request->classroom_id;
     $student->student_id_card = $request->student_id_card;
     $student->name = $request->name;
     $student->gender = $request->gender;
     $student->phone = $request->phone;
-
     $student->save();
 
     return response()->json([
