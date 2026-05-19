@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use Illuminate\Http\Request;
-
+use Illuminate\Validation\Rule;
 class StudentController extends Controller
 {
     //
@@ -26,7 +26,7 @@ public function index(Request $request)
     {
         $query = Student::query();
 
-        // 🔎 SEARCH by name or email
+     
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
@@ -34,7 +34,6 @@ public function index(Request $request)
             });
         }
 
-        // 📄 PAGINATION
         $students = $query->paginate(10);
 
         return response()->json([
@@ -96,7 +95,7 @@ public function store(Request $request)
 }
     public function show($id)
     {
-        $student = Student::find($id);
+        $student = Student::find($id,['*']);
         if($student == null){
             return response()->json([
                 'status' => false,
@@ -110,25 +109,65 @@ public function store(Request $request)
             ], 200);
         }
     }
+// public function update(Request $request, $id)
+// {
+//     $student = Student::find($id);
+
+//     if (!$student) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => 'Student not found'
+//         ], 404);
+//     }
+
+//     $request->validate([
+//         'classroom_id' => 'required|exists:classrooms,id',
+//         'student_id_card' => 'required|unique:students,student_id_card,' . $id,
+//         'name' => 'required|string|max:255',
+//         'gender' => 'required|in:Male,Female',
+//         'phone' => 'nullable|string|max:20',
+//     ]);
+
+//     $student->classroom_id = $request->classroom_id;
+//     $student->student_id_card = $request->student_id_card;
+//     $student->name = $request->name;
+//     $student->gender = $request->gender;
+//     $student->phone = $request->phone;
+
+//     $student->save();
+
+//     return response()->json([
+//         'status' => true,
+//         'message' => 'Student updated successfully',
+//         'data' => $student
+//     ], 200);
+// }
+
 public function update(Request $request, $id)
 {
-    $student = Student::find($id);
+    $student = Student::find($id,['*']);
 
     if (!$student) {
         return response()->json([
             'status' => false,
-            'message' => 'Student not found'
+            'message' => 'រកមិនឃើញទិន្នន័យសិស្សឡើយ (Student not found)'
         ], 404);
     }
 
+    // 💡 កែសម្រួលការ Validate ឱ្យកាន់តែច្បាស់លាស់សម្រាប់ POST Method
     $request->validate([
-        'classroom_id' => 'required|exists:classrooms,id',
-        'student_id_card' => 'required|unique:students,student_id_card,' . $id,
-        'name' => 'required|string|max:255',
-        'gender' => 'required|in:Male,Female',
-        'phone' => 'nullable|string|max:20',
+        'classroom_id'    => 'required|exists:classrooms,id',
+        'student_id_card' => [
+            'required',
+            // ប្រើ Rule::unique ដើម្បីប្រាប់ Laravel ឱ្យរំលង ID របស់សិស្សម្នាក់នេះចោល មិនបាច់គិតថាជាន់គ្នាទេ
+            Rule::unique('students', 'student_id_card')->ignore($id), 
+        ],
+        'name'            => 'required|string|max:255',
+        'gender'          => 'required|in:Male,Female',
+        'phone'           => 'nullable|string|max:20',
     ]);
 
+    // រក្សាទុកទិន្នន័យថ្មី
     $student->classroom_id = $request->classroom_id;
     $student->student_id_card = $request->student_id_card;
     $student->name = $request->name;
@@ -145,7 +184,7 @@ public function update(Request $request, $id)
 }
     public function destroy($id)
     {
-        $student = Student::find($id);
+        $student = Student::find($id,['*']);
 
         if (!$student) {
             return response()->json([
